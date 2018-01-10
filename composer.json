@@ -1,0 +1,16 @@
+{
+  "name": "heavyd/components",
+  "description": "Contains a number of shared components useful for both several implementations.",
+  "autoload": {
+    "psr-4": {
+      "surangapg\\HeavydComponents\\": "src"
+    }
+  },
+  "require": {
+    "symfony/yaml": "^2.8",
+    "symfony/filesystem": "^2.8",
+    "paragonie/random_compat": "^2.0",
+    "symfony/console": "^2.8"
+  },
+  "prefer-stable": true
+}
