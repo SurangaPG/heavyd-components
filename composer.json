@@ -7,10 +7,10 @@
     }
   },
   "require": {
-    "symfony/yaml": "^2.8",
-    "symfony/filesystem": "^2.8",
+    "symfony/yaml": "^3",
+    "symfony/filesystem": "^3",
     "paragonie/random_compat": "^2.0",
-    "symfony/console": "^2.8"
+    "symfony/console": "^3"
   },
   "prefer-stable": true
 }
