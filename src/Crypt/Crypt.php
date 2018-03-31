@@ -2,7 +2,7 @@
 /**
  * @file
  *  pro verbatim copy of the drupal class with the same name, this prevents having
- *  to boostrap a full drupal instance just for this one class. It also prevents
+ *  to bootstrap a full drupal instance just for this one class. It also prevents
  *  a dependency on drupal in a workflow package.
  */
 namespace surangapg\HeavydComponents\Crypt;

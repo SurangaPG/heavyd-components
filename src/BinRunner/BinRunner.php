@@ -101,42 +101,6 @@ class BinRunner implements BinRunnerInterface {
   }
 
   /**
-   * Generate the full binary path.
-   *
-   * @return string
-   *   The full binary path.
-   */
-  protected function generateBin() {
-    $bin = '';
-    if ($this->type == BinRunnerInterface::RELATIVE_BIN) {
-      ltrim($this->bin, './');
-      $bin = './';
-    }
-    $bin .= $this->bin;
-    return $bin;
-  }
-
-  /**
-   * Generate a full string of the args.
-   *
-   * @return string
-   *   All the args for the command.
-   */
-  protected function generateArgs() {
-    return implode(' ', $this->args);
-  }
-
-  /**
-   * Generate a full string of all the options for the command.
-   *
-   * @return string
-   *   All the args for the command.
-   */
-  protected function generateOptions() {
-    return implode(' ', $this->options);
-  }
-
-  /**
    * @inheritdoc
    */
   public function __construct(string $bin, string $dir, OutputInterface $outputInterface = NULL, string $outputFile = NULL, $type = BinRunnerInterface::RELATIVE_BIN) {
@@ -147,7 +111,7 @@ class BinRunner implements BinRunnerInterface {
       $outputInterface = new BufferedOutput();
     }
     $this->outputInterface = $outputInterface;
-    $this->outputFile = isset($outputFile) ? $outputFile : tempnam($dir . '/temp', 'heavyd-command-output');
+    $this->outputFile = isset($outputFile) ? $outputFile : $dir . '/temp/heavyd-command-output--' . str_replace(' ', '-', microtime());
   }
 
   /**
@@ -223,7 +187,6 @@ class BinRunner implements BinRunnerInterface {
         $this->outputInterface->writeln('');
       }
 
-      // @TODO This is an improper return code, needs to be checked.
       return $return;
     }
 
@@ -242,5 +205,51 @@ class BinRunner implements BinRunnerInterface {
 
       return $return;
     }
+  }
+
+  /**
+   * Generate the full binary path.
+   *
+   * @return string
+   *   The full binary path.
+   */
+  protected function generateBin() {
+    $bin = '';
+    if ($this->type == BinRunnerInterface::RELATIVE_BIN) {
+      ltrim($this->bin, './');
+      $bin = './';
+    }
+    $bin .= $this->bin;
+    return $bin;
+  }
+
+  /**
+   * Generate a full string of the args.
+   *
+   * @return string
+   *   All the args for the command.
+   */
+  protected function generateArgs() {
+    return implode(' ', $this->args);
+  }
+
+  /**
+   * Generate a full string of all the options for the command.
+   *
+   * @return string
+   *   All the args for the command.
+   */
+  protected function generateOptions() {
+    return implode(' ', $this->options);
+  }
+
+  /**
+   * Get the output interface.
+   *
+   * @return \Symfony\Component\Console\Output\BufferedOutput|\Symfony\Component\Console\Output\OutputInterface
+   *   The output interface for the command runner.
+   */
+  public function getOutputInterface() {
+    return $this->outputInterface;
   }
 }

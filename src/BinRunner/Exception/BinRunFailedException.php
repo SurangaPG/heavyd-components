@@ -12,7 +12,7 @@ use surangapg\HeavydComponents\BinRunner\BinRunnerInterface;
  *
  * Exception to throw when a bin command couldn't be run.
  *
- * @package workflow\Workflow\Components\Exception
+ * @package surangapg\HeavydComponents\Exception
  */
 class BinRunFailedException extends \Exception {
 
