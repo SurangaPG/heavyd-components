@@ -11,24 +11,20 @@ namespace workflow\Workflow\Test\Components\Properties;
 use PHPUnit\Framework\Assert;
 use PHPUnit\Framework\TestCase;
 use surangapg\HeavydComponents\Properties\Properties;
+use surangapg\HeavydComponents\Scope\Scope;
+use surangapg\HeavydComponents\Scope\ScopeInterface;
 
 class PropertiesTest extends TestCase {
 
   /**
    * Test the creation of a set of properties.
    *
-   * @covers Properties::create
+   * @covers Properties::__construct
    */
   function testCreate() {
 
-    $basePath = $this->generateBasePath();
-
     // Check condition without an additional subpath.
-    $properties = Properties::create($basePath);
-    Assert::assertInstanceOf('surangapg\HeavydComponents\Properties\PropertiesInterface', $properties);
-
-    // Check condition with an additional subpath.
-    $properties = Properties::create($basePath, 'alternative');
+    $properties = new Properties();
     Assert::assertInstanceOf('surangapg\HeavydComponents\Properties\PropertiesInterface', $properties);
   }
 
@@ -38,10 +34,13 @@ class PropertiesTest extends TestCase {
    * @covers Properties::get
    */
   function testGetWithoutParameter() {
-    $properties = Properties::create($this->generateBasePath());
-    $properties = $properties->get();
-    Assert::assertArrayHasKey('project', $properties);
-    Assert::assertEquals(2, count($properties['project']));
+    $properties = new Properties();
+    $properties->addScope($this->generateDummyProjectScope());
+
+    $data = $properties->get();
+
+    Assert::assertArrayHasKey('project', $data);
+    Assert::assertEquals(3, count($data['project']));
   }
 
   /**
@@ -50,86 +49,179 @@ class PropertiesTest extends TestCase {
    * @covers Properties::get
    */
   function testGetWithParameter() {
-    $properties = Properties::create($this->generateBasePath());
-    $properties = $properties->get('project');
-    Assert::assertArrayHasKey('name', $properties);
-    Assert::assertArrayHasKey('version', $properties);
+    $properties = new Properties();
+    $properties->addScope($this->generateDummyProjectScope());
+    $data = $properties->get('project');
+    Assert::assertArrayHasKey('name', $data);
+    Assert::assertArrayHasKey('version', $data);
+    Assert::assertEquals('d8', $data['version']);
   }
 
   /**
-   * Test the loading of an alternate location.
+   * Assert the getting of a "combined" dataset. E.g both project and global.
    *
-   * @covers Properties::create
+   * @covers Properties::get
    */
-  function testCreateFromAlternatePath() {
-    $basePath = $this->generateBasePath();
+  function testGetCombined() {
+    $properties = new Properties();
+    $properties->addScope($this->generateDummyProjectScope());
+    $properties->addScope($this->generateDummyGlobalScope());
+    $data = $properties->get('project');
+    Assert::assertArrayHasKey('name', $data);
+    Assert::assertArrayHasKey('version', $data);
+    Assert::assertEquals('d8', $data['version']);
 
-    // Check condition without an additional subpath.
-    $properties = Properties::create($basePath);
-    Assert::assertEquals('Example', $properties->get('project')['name']);
-
-    // Check condition with an additional subpath.
-    $properties = Properties::create($basePath, 'alternative');
-    Assert::assertEquals('Alternate', $properties->get('project')['name']);
+    Assert::assertEquals('global', $data['nested']['variable']['label']);
+    Assert::assertEquals('project', $data['nested']['variable']['data']);
   }
 
   /**
-   * Test the lazy loading of project properties.
-   *
-   * @covers Properties::loadProjectProperties
+   * @covers Properties::refreshProperties
    */
-  function testLoadProjectProperties() {
-    // Generate a new item without properties preloaded. This should be empty.
-    $properties = Properties::create($this->generateBasePath(), 'properties', FALSE);
-    Assert::assertEmpty($properties->get());
+  function testRefreshProperties() {
+    $properties = new Properties();
+    $properties->addScope($this->generateDummyProjectScope(), FALSE);
 
-    // Load in all the items.
-    $properties->loadProjectProperties();
-    Assert::assertNotEmpty($properties->get());
+    $data = $properties->get();
+    Assert::assertArrayNotHasKey('project', $data);
+
+    $properties->refreshProperties();
+    $data = $properties->get();
+    Assert::assertArrayHasKey('project', $data);
+    Assert::assertEquals(3, count($data['project']));
   }
 
   /**
-   * Test the getting and setting of the basePath.
-   *
    * @covers Properties::getBasePath
-   * @covers Properties::setBasePath
    */
-  function testGetSetBasePath() {
-    $basePath = $this->generateBasePath();
+  function testGetBasePath() {
+    $properties = new Properties();
+    $dummyProject = $this->generateDummyProjectScope();
+    $dummyGlobal = $this->generateDummyGlobalScope();
 
-    // Generate a new item without properties preloaded. This should be empty.
-    $properties = Properties::create($basePath, 'properties', FALSE);
-    Assert::assertEquals($basePath, $properties->getBasePath());
+    $properties->addScope($dummyProject);
+    $properties->addScope($dummyGlobal);
 
-    // Check setting of an item with a trailing slash.
-    $properties = Properties::create($basePath . '/', 'properties', FALSE);
-    Assert::assertEquals($basePath, $properties->getBasePath());
+    Assert::assertEquals($this->generateBasePath(), $properties->getBasePath());
+    Assert::assertEquals($this->generateBasePath(), $properties->getBasePath(ScopeInterface::PROJECT));
+    Assert::assertEquals($this->generateBasePath(), $properties->getBasePath(ScopeInterface::GLOBAL));
   }
 
   /**
-   * Test the getting and setting of the basePath.
-   *
-   * @covers Properties::getPropertiesPath
-   * @covers Properties::setPropertiesPath
+   * @covers Properties::getBasePath
    */
-  function testGetSetPropertiesPath() {
-    $basePath = $this->generateBasePath();
+  function testGetPropertiesPath() {
+    $properties = new Properties();
+    $dummyProject = $this->generateDummyProjectScope();
+    $dummyGlobal = $this->generateDummyGlobalScope();
 
-    // Generate a new item without properties preloaded. This should be empty.
-    $properties = Properties::create($basePath, 'properties', FALSE);
-    Assert::assertEquals('properties', $properties->getPropertiesPath());
+    $properties->addScope($dummyProject);
+    $properties->addScope($dummyGlobal);
 
-    // Check setting of an item with a trailing slash.
-    $properties = Properties::create($basePath, 'properties/', FALSE);
-    Assert::assertEquals('properties', $properties->getPropertiesPath());
+    Assert::assertEquals('project-scope', $properties->getPropertiesPath());
+    Assert::assertEquals('project-scope', $properties->getPropertiesPath(FALSE, ScopeInterface::PROJECT));
+    Assert::assertEquals($this->generateBasePath() . '/project-scope', $properties->getPropertiesPath(TRUE, ScopeInterface::PROJECT));
 
-    // Check setting of an item with a leading slash.
-    $properties = Properties::create($basePath, '/properties', FALSE);
-    Assert::assertEquals('properties', $properties->getPropertiesPath());
+    Assert::assertEquals('global-scope', $properties->getPropertiesPath(FALSE, ScopeInterface::GLOBAL));
+    Assert::assertEquals($this->generateBasePath() . '/global-scope', $properties->getPropertiesPath(TRUE, ScopeInterface::GLOBAL));
+  }
 
-    // Check setting of an item with both a leading/trailing slash.
-    $properties = Properties::create($basePath, '/properties/', FALSE);
-    Assert::assertEquals('properties', $properties->getPropertiesPath());
+  /**
+   * @covers Properties::getScope
+   * @covers Properties::addScope
+   */
+  function testGetScope() {
+    $properties = new Properties();
+    $dummyProject = $this->generateDummyProjectScope();
+    $dummyGlobal = $this->generateDummyGlobalScope();
+
+    $properties->addScope($dummyProject);
+    $properties->addScope($dummyGlobal);
+
+    Assert::assertEquals($dummyProject, $properties->getScope());
+    Assert::assertEquals($dummyProject, $properties->getScope(ScopeInterface::PROJECT));
+    Assert::assertEquals($dummyGlobal, $properties->getScope(ScopeInterface::GLOBAL));
+  }
+
+  /**
+   * @covers Properties::getScopes
+   * @covers Properties::addScope
+   */
+  function testGetScopes() {
+    $properties = new Properties();
+    $dummyProject = $this->generateDummyProjectScope();
+    $dummyGlobal = $this->generateDummyGlobalScope();
+
+    $properties->addScope($dummyProject);
+    $properties->addScope($dummyGlobal);
+
+    Assert::assertEquals($dummyProject, $properties->getScopes()[ScopeInterface::PROJECT]);
+    Assert::assertEquals($dummyGlobal, $properties->getScopes()[ScopeInterface::GLOBAL]);
+
+    Assert::assertEquals(2, count($properties->getScopes()));
+  }
+
+  /**
+   * Test the refreshing of the properties.
+   *
+   * @covers Properties::setScopes
+   */
+  public function testSetScopes() {
+    $properties = new Properties();
+
+    $scopes = [
+      'global' => $this->generateDummyGlobalScope(),
+      'project' => $this->generateDummyGlobalScope(),
+    ];
+
+    $properties->setScopes($scopes);
+    Assert::assertEquals($scopes, $properties->getScopes());
+
+    // Checks that no data has been preloaded.
+    $data = $properties->get();
+    Assert::assertArrayHasKey('project', $data);
+    Assert::assertEquals(3, count($data['project']));
+  }
+
+  /**
+   * Test the refreshing of the properties.
+   *
+   * @covers Properties::setScopes
+   */
+  public function testSetScopesWithoutAutoload() {
+    $properties = new Properties();
+
+    $scopes = [
+      'global' => $this->generateDummyGlobalScope(),
+      'project' => $this->generateDummyGlobalScope(),
+    ];
+
+    $properties->setScopes($scopes, FALSE);
+    Assert::assertEquals($scopes, $properties->getScopes());
+
+    // Checks that no data has been preloaded.
+    $data = $properties->get();
+    Assert::assertArrayNotHasKey('project', $data);
+  }
+
+  /**
+   * The project scope for testing.
+   *
+   * @return \surangapg\HeavydComponents\Scope\Scope
+   *   Project scope with some data.
+   */
+  private function generateDummyProjectScope() {
+    return new Scope($this->generateBasePath(), 'project-scope');
+  }
+
+  /**
+   * The global scope for testing.
+   *
+   * @return \surangapg\HeavydComponents\Scope\Scope
+   *   Global scope.
+   */
+  private function generateDummyGlobalScope() {
+    return new Scope($this->generateBasePath(), 'global-scope', ScopeInterface::GLOBAL);
   }
 
   /**

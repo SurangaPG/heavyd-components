@@ -1,0 +1,6 @@
+name: Alternate
+version: d8-global
+nested:
+  variable:
+    data: global
+    label: global

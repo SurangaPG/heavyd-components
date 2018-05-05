@@ -1,0 +1,5 @@
+name: Example
+version: d8
+nested:
+  variable:
+    data: project

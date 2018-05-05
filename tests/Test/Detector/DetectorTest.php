@@ -26,7 +26,7 @@ class DetectorTest extends TestCase {
     $detector = new Detector($this->provideFixtureDir() . '/list-classes-test', 'githook');
     $classes = $detector->detect();
 
-    $this->assertEquals(1, count($classes), 'Should have detected 1 class name.');
+    $this->assertEquals(2, count($classes), 'Should have detected 2 class names.');
   }
 
   /**
